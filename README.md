@@ -2,6 +2,9 @@
 
 一个用于通过 BLE 连接锂安 BMS 的 ESPHome 自定义组件，支持读取电池数据和控制功能。
 
+<img width="1045" height="789" alt="Snipaste_2026-06-03_09-27-46" src="https://github.com/user-attachments/assets/8dd74e08-652a-494e-9514-73ffbc3ccd10" />
+
+
 ## 功能特性
 
 ### 数据读取
