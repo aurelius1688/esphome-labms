@@ -176,16 +176,6 @@ esp32-lian-bms/
 如有问题或建议，请通过以下方式联系：
 
 - 提交 GitHub Issue
-- 发送邮件至：your-email@example.com
-
-## 更新日志
-
-### v1.0.0 (2026-05-22)
-- 初始版本发布
-- 实现 BLE 连接和数据读取
-- 实现充放电控制
-- 支持 OLED 显示
-- 支持 Home Assistant 集成
 
 ## 隐私说明
 
