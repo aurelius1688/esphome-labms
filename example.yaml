@@ -1,0 +1,269 @@
+substitutions:
+  name: lian-bms
+  friendly_name: LiAn-BMS
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  comment: "LiAn BMS via BLE"
+  project:
+    name: "lian.esphome-bms"
+    version: "1.0.0"
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: arduino
+
+external_components:
+  - source:
+      type: local
+      path: components
+
+wifi:
+  ssid: "YOUR_WIFI_SSID"
+  password: "YOUR_WIFI_PASSWORD"
+  power_save_mode: none
+  fast_connect: true
+  reboot_timeout: 0s
+  output_power: 20dB
+  ap:
+    ssid: "LiAn-BMS-Fallback"
+    password: "12345678"
+  on_connect:
+    - logger.log: "WiFi connected!"
+  on_disconnect:
+    - logger.log: "WiFi disconnected"
+
+captive_portal:
+
+ota:
+  - platform: esphome
+    password: "YOUR_OTA_PASSWORD"
+
+logger:
+  level: DEBUG
+  logs:
+    esp32_ble_tracker: INFO
+    esp32_ble_client: INFO
+
+api:
+  encryption:
+    key: "YOUR_API_ENCRYPTION_KEY"
+  reboot_timeout: 0s
+
+web_server:
+  port: 80
+
+i2c:
+  sda: GPIO4
+  scl: GPIO5
+  scan: true
+  frequency: 400kHz
+
+esp32_ble_tracker:
+  scan_parameters:
+    active: false
+    interval: 320ms
+    window: 320ms
+
+ble_client:
+  - mac_address: "YOUR_BMS_MAC_ADDRESS"
+    id: client0
+
+# ============================================================
+# BMS 组件配置
+# ============================================================
+lian_bms_ble:
+  ble_client_id: client0
+  id: bms0
+
+font:
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 10
+  - file: "gfonts://Roboto"
+    id: font_tiny
+    size: 9
+  - file: "gfonts://Roboto"
+    id: font_medium
+    size: 12
+
+display:
+  - platform: ssd1306_i2c
+    id: oled_display
+    model: SH1106_128X64
+    address: 0x3C
+    rotation: 0°
+    contrast: 80%
+    update_interval: 2s
+    pages:
+      - id: page_main
+        lambda: |-
+          float soc = id(state_of_charge).state;
+          float cap = id(capacity_remaining).state;
+          float tv  = id(total_voltage).state;
+          float cur = id(current).state;
+          float pow = id(power).state;
+          float dv  = id(delta_cell_voltage).state;
+          float cv[4] = {
+            id(cell_voltage_1).state,
+            id(cell_voltage_2).state,
+            id(cell_voltage_3).state,
+            id(cell_voltage_4).state
+          };
+          // 分隔线
+          it.line(0, 12, 127, 12);
+          it.line(0, 50, 127, 50);
+          // 第1行：4个电芯电压
+          if (!isnan(cv[0])) it.printf(2, 2, id(font_tiny), "%.3f", cv[0]);
+          if (!isnan(cv[1])) it.printf(34, 2, id(font_tiny), "%.3f", cv[1]);
+          if (!isnan(cv[2])) it.printf(66, 2, id(font_tiny), "%.3f", cv[2]);
+          if (!isnan(cv[3])) it.printf(98, 2, id(font_tiny), "%.3f", cv[3]);
+          // 第2行：总电压 + 功率
+          if (!isnan(tv)) it.printf(2, 16, id(font_medium), "%.3fV", tv);
+          else it.printf(2, 16, id(font_medium), "--.---V");
+          if (!isnan(pow)) it.printf(68, 16, id(font_medium), "%.2fW", pow);
+          else it.printf(68, 16, id(font_medium), "--.--W");
+          // 第3行：容量 + 电流
+          if (!isnan(cap)) it.printf(2, 32, id(font_medium), "%.3fAh", cap);
+          else it.printf(2, 32, id(font_medium), ".---Ah");
+          if (!isnan(cur)) it.printf(68, 32, id(font_medium), "%.2fA", cur);
+          else it.printf(68, 32, id(font_medium), "--.--A");
+          // 第4行：2组均匀间隔（与电芯行对齐）
+          if (!isnan(dv) && network::is_connected()) {
+              float rssi = wifi::global_wifi_component->wifi_rssi();
+              it.printf(0, 55, id(font_tiny), "%.0fmV %.0fdBm", dv * 1000, rssi);
+          } else if (!isnan(dv)) {
+              it.printf(0, 55, id(font_tiny), "%.0fmV", dv * 1000);
+          } else if (network::is_connected()) {
+              float rssi = wifi::global_wifi_component->wifi_rssi();
+              it.printf(0, 55, id(font_tiny), "%.0fdBm", rssi);
+          }
+          if (!isnan(soc) && !isnan(cap) && !isnan(cur)) {
+              float hours = 0;
+              float fc = id(full_capacity).state;
+              if (cur > 0.01f && !isnan(fc)) {
+                  // 充电中：预估充满时间 = (满充容量 - 剩余容量) / 充电电流
+                  hours = (fc - cap) / cur;
+              } else if (cur < -0.01f) {
+                  // 放电中：预估放完时间 = 剩余容量 / 放电电流
+                  hours = cap / fabs(cur);
+              } else {
+                  // 电流为0：显示剩余容量值
+                  hours = cap;
+              }
+              if (hours < 0) hours = 0;
+              if (hours < 1.0f) it.printf(72, 55, id(font_tiny), "%.0f%% %dmin", soc, (int)ceil(hours * 60));
+              else if (hours < 24.0f) it.printf(72, 55, id(font_tiny), "%.0f%% %.1fh", soc, hours);
+              else it.printf(72, 55, id(font_tiny), "%.0f%% %.1fd", soc, hours / 24);
+          } else if (!isnan(soc)) {
+              it.printf(72, 55, id(font_tiny), "%.0f%%", soc);
+          }
+
+binary_sensor:
+  - platform: lian_bms_ble
+    lian_bms_ble_id: bms0
+    online_status:
+      name: "Online Status"
+
+text_sensor:
+  - platform: lian_bms_ble
+    lian_bms_ble_id: bms0
+    debug:
+      name: "BLE Debug"
+    connected_time_text:
+      name: "connected time text"
+
+  - platform: template
+    name: "Firmware Version"
+    id: firmware_version
+    icon: "mdi:tag"
+    lambda: |-
+      return {"v1.0.0"};
+    update_interval: 60s
+
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+    ssid:
+      name: "WiFi SSID"
+
+sensor:
+  - platform: lian_bms_ble
+    lian_bms_ble_id: bms0
+    total_voltage:
+      name: "total voltage"
+      id: total_voltage
+    current:
+      name: "current"
+      id: current
+    power:
+      name: "power"
+      id: power
+    capacity_remaining:
+      name: "capacity remaining"
+      id: capacity_remaining
+    state_of_charge:
+      name: "state of charge"
+      id: state_of_charge
+    mos_temperature:
+      name: "MOS temperature"
+    temperature_sensor_1:
+      name: "temperature sensor 1"
+    temperature_sensor_2:
+      name: "temperature sensor 2"
+    min_cell_voltage:
+      name: "min cell voltage"
+    max_cell_voltage:
+      name: "max cell voltage"
+    delta_cell_voltage:
+      name: "delta cell voltage"
+      id: delta_cell_voltage
+    average_cell_voltage:
+      name: "average cell voltage"
+    cell_voltage_1:
+      name: "cell voltage 1"
+      id: cell_voltage_1
+    cell_voltage_2:
+      name: "cell voltage 2"
+      id: cell_voltage_2
+    cell_voltage_3:
+      name: "cell voltage 3"
+      id: cell_voltage_3
+    cell_voltage_4:
+      name: "cell voltage 4"
+      id: cell_voltage_4
+    charging_cycles:
+      name: "charging cycles"
+    total_cycle_capacity:
+      name: "total cycle capacity"
+    connected_time:
+      name: "connected time"
+    full_capacity:
+      name: "full capacity"
+      id: full_capacity
+    design_capacity:
+      name: "design capacity"
+
+switch:
+  - platform: ble_client
+    ble_client_id: client0
+    name: "BLE Connection"
+    id: ble_client_switch0
+
+  - platform: lian_bms_ble
+    lian_bms_ble_id: bms0
+    charge:
+      name: "Charge MOS"
+      id: charge_switch
+    discharge:
+      name: "Discharge MOS"
+      id: discharge_switch
+    heating:
+      name: "Heating"
+      id: heating_switch
+
+button:
+  - platform: restart
+    name: "System Restart"
