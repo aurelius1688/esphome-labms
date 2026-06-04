@@ -33,6 +33,18 @@
 - 锂安 BMS（支持 BLE 的型号）
 - 可选：SH1106 OLED 显示屏（I2C接口）
 
+### OLED 接线说明
+
+如需使用OLED显示屏，请参考：[OLED_WIRING.md](OLED_WIRING.md)
+
+**快速接线：**
+| ESP32-C3 | OLED | 说明 |
+|----------|------|------|
+| GPIO4 | SDA | I2C数据线 |
+| GPIO5 | SCL | I2C时钟线 |
+| 3.3V | VCC | 电源 |
+| GND | GND | 地线 |
+
 ## 快速开始
 
 ### 1. 克隆项目
