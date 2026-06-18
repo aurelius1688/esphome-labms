@@ -51,7 +51,7 @@
 
 ```bash
 git clone https://github.com/aurelius1688/esphome-labms.git
-cd esp32-lian-bms
+cd esphome-labms
 ```
 
 ### 2. 配置 WiFi 和 BMS 信息
