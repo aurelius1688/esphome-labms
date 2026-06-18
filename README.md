@@ -137,7 +137,7 @@ esp32-lian-bms/
 
 经过约28个版本的调试，发现 BMS 使用 CRC16-XMODEM 而非标准的 Modbus CRC16。BMS 收到 CRC 错误的命令后会静默丢弃，不返回任何错误。
 
-详细技术文档请参考：[ESP32连接锂安BMS完整经验说明_开源版.md](ESP32连接锂安BMS完整经验说明_开源版.md)
+详细技术文档请参考：[experience.md](experience.md)
 
 ## 故障排除
 
