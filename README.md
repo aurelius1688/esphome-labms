@@ -50,7 +50,7 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/your-username/esp32-lian-bms.git
+git clone https://github.com/aurelius1688/esphome-labms.git
 cd esp32-lian-bms
 ```
 
