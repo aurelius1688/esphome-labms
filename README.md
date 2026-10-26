@@ -4,6 +4,8 @@
 
 <img width="1045" height="789" alt="Snipaste_2026-06-03_09-27-46" src="https://github.com/user-attachments/assets/8dd74e08-652a-494e-9514-73ffbc3ccd10" />
 <img width="706" height="777" alt="image" src="https://github.com/user-attachments/assets/72229e64-4422-455b-9a5b-e5b12f4d81b3" />
+<img width="910" height="844" alt="image" src="https://github.com/user-attachments/assets/f516b3b8-3ccf-4760-8cc1-0a7d4242cc67" />
+<img width="509" height="729" alt="image" src="https://github.com/user-attachments/assets/aea1078c-04f1-47f5-800b-0e5e2473375e" />
 
 
 
